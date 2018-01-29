@@ -2,5 +2,18 @@
 
 @import "bootstrap";
 
-.side { padding: 4ex; text-align: center; }
 h1 { text-align: center; }
+
+.box {
+    padding: 10px;
+}
+
+.unmatched {
+    border: 2px solid black;
+    border-radius: 10px;
+}
+
+.matched {
+    border: 2px solid green;
+    border-radius: 10px;
+}
