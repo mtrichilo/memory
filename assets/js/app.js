@@ -24,8 +24,20 @@ import run_memory from "./memory";
 
 function init() {
   let root = document.getElementById('game');
-  let channel = socket.channel("game: " + window.gameName, {});
-  run_memory(root, channel);
+  if (root) {
+    let channel = socket.channel("game: " + window.gameName, {});
+    run_memory(root, channel);
+  }
+
+  if (document.getElementById('index')) {
+      create_game();
+  }
+}
+
+function create_game() {
+    $('#join').click(() => {
+        window.location = '/game/' + $('#text').val();
+    })
 }
 
 // Use jQuery to delay until page loaded.
