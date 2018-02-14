@@ -2,66 +2,36 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Button } from 'reactstrap';
 
-export default function run_memory(root) {
-    ReactDOM.render(<Memory />, root);
+export default function run_memory(root, channel) {
+    ReactDOM.render(<Memory channel={channel}/>, root);
 } 
 
 class Memory extends React.Component {
     constructor(props) {
         super(props);
-        this.state = this.init();
+        this.channel = props.channel;
+        this.state = {board: [], clicks: 0, wait: false};
+        this.channel.join()
+            .receive("ok", this.newView.bind(this))
+            .receive("error", resp => {console.log("Unable to join", resp)});
     }
 
-    init() {
-        // Shuffle the initial set of letters.
-        let letters = ["A", "B", "C", "D", "E", "F", "G", "H", "A", "B", "C", "D", "E", "F", "G", "H"];
-        letters = _.shuffle(letters);
-        
-        // Create a new Card object for each letter within the board.
-        let board = _.map(letters, l => { 
-            return { letter: l, matched: false, selected: false, click: this.click.bind(this) } 
-        });
-       
-        // Return the initial game state.
-        return { board: board, clicks: 0, wait: false };
+    newView(view) {
+        this.setState(view.game);
     }
 
     click(key) {
-        // If we've already selected this card, or two cards have been
-        // selected and we're waiting for the one second timeout, return.
-        if (this.state.board[key].selected || this.state.wait) {
-            return;
-        }
-
-        // Change the state of the selected card and increase the click count.
-        let board1 = _.map(this.state.board, card => _.clone(card));
-        _.extend(board1[key], { selected: true });
-        this.setState({ board: board1, clicks: this.state.clicks + 1 });
-
-        // Retrieve selected cards.
-        let board2 = _.map(board1, card => _.clone(card));
-        let selected = _.where(board2, { selected: true });
-
-        // If two are selected, set wait to true and check for a match.
-        if (selected.length == 2) {
-            this.setState({ wait: true });
-
-            // If they match, set the matched property to true,
-            if (selected[0].letter == selected[1].letter) {
-                selected.forEach(card => _.extend(card, { matched: true }));
-            }
-
-            // Always reset selected to false.
-            selected.forEach(card => _.extend(card, { selected : false }));
-
-            // Wait a second before hiding the cards again.
-            setTimeout(() => this.setState({ board: board2, wait: false }), 1000); 
+        this.channel.push("click", {index: key})
+            .receive("ok", this.newView.bind(this));
+        if (this.state.clicks % 2 == 1) {
+            setTimeout(() => this.channel.push("flip", {})
+                    .receive("ok", this.newView.bind(this)), 1000);
         }
     }
 
     restart() {
-        // Set the state to the initial game state.
-        this.setState(this.init());
+        this.channel.push("restart", {})
+            .receive("ok", this.newView.bind(this));
     }
 
     render() {
@@ -69,7 +39,7 @@ class Memory extends React.Component {
         return (
             <div>
                 <div className="row">
-                    { _.map(board, (card, i) => <Card key={i} card={board[i]} index={i}/>) }
+                    { _.map(board, (card, i) => <Card key={i} card={board[i]} index={i} click={this.click.bind(this)}/>) }
                 </div>
                 <p>Number of clicks: {this.state.clicks}</p>
                 <Button onClick={this.restart.bind(this)}>Reset</Button>
@@ -82,7 +52,7 @@ function Card(props) {
     let card = props.card;
 
     function click() {
-        card.click(props.index);
+        props.click(props.index);
     }
 
     if (card.matched) {
