@@ -31,7 +31,7 @@ defmodule Memory.Game do
       if Enum.count(update.board, &(&1.selected)) == 2 do
         temp =
           if Enum.all?(update.board, &(xnor(&1.selected, &1.letter == letter))) do
-            temp = %{update | board: Enum.map(update.board, &(%{&1 | matched: &1.matched || &1.letter == letter}))}
+            %{update | board: Enum.map(update.board, &(%{&1 | matched: &1.matched || &1.letter == letter}))}
           else
             update
           end
